@@ -11,9 +11,10 @@ interface AIChatComponentProps {
   onMakeDiary: (messages: { role: 'user' | 'assistant', content: string }[]) => void
   initialMessages: { role: 'user' | 'assistant', content: string }[]
   isInitialized: boolean
+  initializeChat: () => Promise<void>
 }
 
-export function AIChatComponent({ user, onMakeDiary, initialMessages, isInitialized }: AIChatComponentProps) {
+export function AIChatComponent({ user, onMakeDiary, initialMessages, isInitialized, initializeChat }: AIChatComponentProps) {
   const [input, setInput] = useState('')
   const [messages, setMessages] = useState<{ role: 'user' | 'assistant', content: string }[]>(initialMessages)
   const [isLoading, setIsLoading] = useState(false)
@@ -26,10 +27,17 @@ export function AIChatComponent({ user, onMakeDiary, initialMessages, isInitiali
   }, [messages]);
 
   useEffect(() => {
-    if (isInitialized) {
+    if (!isInitialized) {
+      initializeChat();
+    } else {
       setMessages(initialMessages);
     }
-  }, [isInitialized, initialMessages]);
+  }, [isInitialized, initialMessages, initializeChat]);
+
+  // <assistant>タグのみを削除し、<diary_entry>タグは保持する関数
+  const removeAssistantTags = (content: string) => {
+    return content.replace(/<assistant>([\s\S]*?)<\/assistant>/g, '$1').trim();
+  };
 
   const handleSendMessage = async (message: string) => {
     setIsLoading(true)
@@ -55,8 +63,8 @@ export function AIChatComponent({ user, onMakeDiary, initialMessages, isInitiali
 
       const data = await response.json()
       setConversationId(data.conversation_id)
-      // <assistant>タグを削除
-      const cleanedAnswer = data.answer.replace(/<assistant>([\s\S]*?)<\/assistant>/g, '$1').trim();
+      // <assistant>タグのみを削除
+      const cleanedAnswer = removeAssistantTags(data.answer);
       setMessages(prev => [...prev, { role: 'assistant', content: cleanedAnswer }])
     } catch (error) {
       console.error('Error sending message:', error)
@@ -65,11 +73,6 @@ export function AIChatComponent({ user, onMakeDiary, initialMessages, isInitiali
       setIsLoading(false)
       setInput('')
     }
-  }
-
-  // <assistant></assistant>タグを取り除く関数
-  const removeAssistantTags = (content: string) => {
-    return content.replace(/<assistant>([\s\S]*?)<\/assistant>/g, '$1').trim();
   }
 
   return (

@@ -173,6 +173,8 @@ export function DiaryAppComponent() {
   };
 
   const initializeAIChat = async () => {
+    if (isAIChatInitialized) return;
+
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -191,13 +193,19 @@ export function DiaryAppComponent() {
       }
 
       const data = await response.json();
-      // <assistant>タグを削除
-      const cleanedAnswer = data.answer.replace(/<assistant>([\s\S]*?)<\/assistant>/g, '$1').trim();
-      setAiMessages([{ role: 'assistant', content: cleanedAnswer }]);
+      const cleanedAnswer = removeAssistantTags(data.answer);
+      setAiMessages([
+        { role: 'user', content: 'こんにちは' },
+        { role: 'assistant', content: cleanedAnswer }
+      ]);
       setIsAIChatInitialized(true);
     } catch (error) {
       console.error('Error initializing AI chat:', error);
     }
+  };
+
+  const removeAssistantTags = (content: string) => {
+    return content.replace(/<assistant>([\s\S]*?)<\/assistant>/g, '$1').trim();
   };
 
   useEffect(() => {
@@ -217,6 +225,7 @@ export function DiaryAppComponent() {
               onMakeDiary={handleMakeDiary} 
               initialMessages={aiMessages}
               isInitialized={isAIChatInitialized}
+              initializeChat={initializeAIChat}
             />
           </div>
           
