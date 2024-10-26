@@ -6,6 +6,7 @@ import { Calendar } from '@/components/ui/calendar'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { AIChatComponent } from '@/components/ai-chat'
 
 // Supabaseクライアントの初期化
 const supabase = createClient(
@@ -176,6 +177,11 @@ export function DiaryAppComponent() {
               </CardContent>
             </Card>
           )}
+          
+          {/* AIチャットコンポーネントを追加 */}
+          <div className="col-span-1 md:col-span-2 mt-4">
+            <AIChatComponent user={user} />
+          </div>
         </div>
       ) : (
         <Button onClick={handleLogin}>Googleでログイン</Button>
