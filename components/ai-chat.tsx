@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -8,20 +8,32 @@ import { User } from '@supabase/supabase-js'
 
 interface AIChatComponentProps {
   user: User
+  onMakeDiary: (messages: { role: 'user' | 'assistant', content: string }[]) => void
+  initialMessages: { role: 'user' | 'assistant', content: string }[]
+  isInitialized: boolean
 }
 
-export function AIChatComponent({ user }: AIChatComponentProps) {
+export function AIChatComponent({ user, onMakeDiary, initialMessages, isInitialized }: AIChatComponentProps) {
   const [input, setInput] = useState('')
-  const [messages, setMessages] = useState<{ role: 'user' | 'assistant', content: string }[]>([])
+  const [messages, setMessages] = useState<{ role: 'user' | 'assistant', content: string }[]>(initialMessages)
   const [isLoading, setIsLoading] = useState(false)
   const [conversationId, setConversationId] = useState<string | null>(null)
 
-  const handleSendMessage = async () => {
-    if (!input.trim()) return
+  const hasDiaryEntry = useMemo(() => {
+    return messages.some(msg => 
+      msg.role === 'assistant' && msg.content.includes('<diary_entry>')
+    );
+  }, [messages]);
 
+  useEffect(() => {
+    if (isInitialized) {
+      setMessages(initialMessages);
+    }
+  }, [isInitialized, initialMessages]);
+
+  const handleSendMessage = async (message: string) => {
     setIsLoading(true)
-    const userMessage = { role: 'user' as const, content: input }
-    setMessages(prev => [...prev, userMessage])
+    setMessages(prev => [...prev, { role: 'user', content: message }])
 
     try {
       const response = await fetch('/api/chat', {
@@ -30,9 +42,9 @@ export function AIChatComponent({ user }: AIChatComponentProps) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          message: input, 
+          message: message, 
           conversation_id: conversationId,
-          user_id: user.id  // ユーザーIDを送信
+          user_id: user.id
         })
       })
 
@@ -43,8 +55,9 @@ export function AIChatComponent({ user }: AIChatComponentProps) {
 
       const data = await response.json()
       setConversationId(data.conversation_id)
-      const assistantMessage = { role: 'assistant' as const, content: data.answer }
-      setMessages(prev => [...prev, assistantMessage])
+      // <assistant>タグを削除
+      const cleanedAnswer = data.answer.replace(/<assistant>([\s\S]*?)<\/assistant>/g, '$1').trim();
+      setMessages(prev => [...prev, { role: 'assistant', content: cleanedAnswer }])
     } catch (error) {
       console.error('Error sending message:', error)
       alert(`メッセージの送信中にエラーが発生しました: ${error instanceof Error ? error.message : String(error)}`)
@@ -54,29 +67,49 @@ export function AIChatComponent({ user }: AIChatComponentProps) {
     }
   }
 
+  // <assistant></assistant>タグを取り除く関数
+  const removeAssistantTags = (content: string) => {
+    return content.replace(/<assistant>([\s\S]*?)<\/assistant>/g, '$1').trim();
+  }
+
   return (
-    <Card className="w-full max-w-2xl mx-auto">
+    <Card className="w-full h-full flex flex-col">
       <CardHeader>
         <CardTitle>AIチャット</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-4 mb-4">
+      <CardContent className="flex-grow flex flex-col">
+        <div className="space-y-4 mb-4 flex-grow overflow-y-auto">
           {messages.map((message, index) => (
             <div key={index} className={`p-2 rounded-lg ${message.role === 'user' ? 'bg-blue-100 text-right' : 'bg-gray-100'}`}>
-              {message.content}
+              {removeAssistantTags(message.content)}
             </div>
           ))}
         </div>
-        <Textarea
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="メッセージを入力..."
-          className="mb-2"
-        />
-        <Button onClick={handleSendMessage} disabled={isLoading}>
-          {isLoading ? '送信中...' : '送信'}
-        </Button>
+        <div className="mt-auto">
+          <Textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="メッセージを入力..."
+            className="mb-2"
+            rows={3}
+            disabled={!isInitialized || isLoading}
+          />
+          <div className="flex justify-between items-center">
+            <Button 
+              onClick={() => handleSendMessage(input)} 
+              disabled={!isInitialized || isLoading || input.trim() === ''}
+            >
+              {isLoading ? '送信中...' : '送信'}
+            </Button>
+            <Button 
+              onClick={() => onMakeDiary(messages)} 
+              disabled={!hasDiaryEntry}
+            >
+              日記にする
+            </Button>
+          </div>
+        </div>
       </CardContent>
     </Card>
-  )
+  );
 }
