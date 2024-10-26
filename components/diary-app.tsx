@@ -195,7 +195,7 @@ export function DiaryAppComponent() {
       const data = await response.json();
       const cleanedAnswer = removeAssistantTags(data.answer);
       setAiMessages([
-        { role: 'user', content: 'こんにちは' },
+        { role: 'user', content: '始めましょう' },
         { role: 'assistant', content: cleanedAnswer }
       ]);
       setIsAIChatInitialized(true);
