@@ -71,9 +71,17 @@ export function DiaryAppComponent() {
     }
   }
 
+  const getRedirectUrl = () => {
+    // window.location.originで現在のドメインを取得
+    return `${window.location.origin}/auth/callback`
+  }
+
   const handleLogin = async () => {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
+      options: {
+        redirectTo: getRedirectUrl()
+      }
     })
   }
 
@@ -151,22 +159,49 @@ export function DiaryAppComponent() {
     }
   }
 
-  const handleMakeDiary = (messages: { role: 'user' | 'assistant', content: string }[]) => {
+  const handleMakeDiary = async (messages: { role: 'user' | 'assistant', content: string }[]) => {
     const diaryContent = messages
       .filter(msg => msg.role === 'assistant')
       .map(msg => {
         const match = msg.content.match(/<diary_entry>([\s\S]*?)<\/diary_entry>/);
         return match ? match[1].trim() : '';
       })
-      .filter(entry => entry !== '') // 空のエントリーを除外
+      .filter(entry => entry !== '')
       .join('\n\n')
-      .trim(); // 最終的な文字列の前後の空白を削除
+      .trim();
 
-    if (diaryContent) {
+    if (diaryContent && user) {
+      // 現在の日付の日記が存在するか確認
+      const formattedDate = formatDateToLocalTimezone(date);
+      const { data, error } = await supabase
+        .from('diaries')
+        .select('content')
+        .eq('user_id', user.id)
+        .eq('date', formattedDate)
+        .maybeSingle();
+
+      if (!data) {
+        // 日記が存在しない場合、自動保存
+        const { error: saveError } = await supabase
+          .from('diaries')
+          .upsert({ 
+            user_id: user.id, 
+            date: formattedDate, 
+            content: diaryContent 
+          });
+
+        if (saveError) {
+          console.error('Error auto-saving diary:', saveError);
+          alert('日記の自動保存中にエラーが発生しました');
+        } else {
+          fetchDiaryDates(user.id, currentMonth);
+          setSavedDiary(diaryContent);
+        }
+      }
+
       setDiary(diaryContent);
       setShowDiaryInput(true);
     } else {
-      // 日記の内容が空の場合の処理
       alert('有効な日記エントリーが見つかりませんでした。');
       setShowDiaryInput(false);
     }
@@ -256,7 +291,7 @@ export function DiaryAppComponent() {
           {showDiaryInput && (
             <Card className="col-span-1 md:col-span-2">
               <CardHeader>
-                <CardTitle>日記を書く</CardTitle>
+                <CardTitle>日記を書く(編集もできます。空にして保存すると削除されます。)</CardTitle>
               </CardHeader>
               <CardContent>
                 <Textarea
