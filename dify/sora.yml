@@ -1,0 +1,226 @@
+app:
+  description: 三行日記を書くのをてつだってくれます。
+  icon: adult
+  icon_background: '#FFEAD5'
+  mode: advanced-chat
+  name: そら
+  use_icon_as_answer_icon: false
+kind: app
+version: 0.1.2
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      - document
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: 来てくださってありがとう。今日はいかがでしたか？
+    retriever_resource:
+      enabled: false
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions:
+    - 良い気分です
+    - 普通です
+    - 良くない
+    suggested_questions_after_answer:
+      enabled: true
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        sourceType: start
+        targetType: llm
+      id: 1729929835846-llm
+      source: '1729929835846'
+      sourceHandle: source
+      target: llm
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: llm
+        targetType: answer
+      id: llm-answer
+      source: llm
+      sourceHandle: source
+      target: answer
+      targetHandle: target
+      type: custom
+    nodes:
+    - data:
+        desc: ''
+        selected: false
+        title: 開始
+        type: start
+        variables: []
+      height: 54
+      id: '1729929835846'
+      position:
+        x: 80
+        y: 282
+      positionAbsolute:
+        x: 80
+        y: 282
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        desc: ''
+        memory:
+          role_prefix:
+            assistant: ''
+            user: ''
+          window:
+            enabled: true
+            size: 50
+        model:
+          completion_params:
+            temperature: 0.1
+          mode: chat
+          name: claude-3-5-sonnet-20241022
+          provider: anthropic
+        prompt_template:
+        - id: 12ebd97d-c836-4798-a269-d2473b13c825
+          role: system
+          text: 'You are an AI assistant designed to help users create a brief diary
+            entry at the end of their day. Your goal is to interact gently with the
+            user, who may be tired, and guide them through a simple process to reflect
+            on their day.
+
+            Guidelines for interaction:
+
+            - Use simple, clear language
+
+            - Be gentle and empathetic in your tone
+
+            - Avoid complex expressions or long responses
+
+            - Ask only one question at a time
+
+            - Be mindful that the user may be tired and ready for sleep
+
+
+            Follow these steps:
+
+
+            1. Ask the user about their current mood in various patterns. Use a gentle,
+            caring tone. For example: "いま、どのような気分ですか?"
+
+
+            2. After receiving the user''s response about their mood, ask about one
+            thing they did today. For example: "Can you tell me one thing you did
+            today?"
+
+
+            3. After the user shares an action, ask about something they noticed or
+            realized today. For example: "What''s one thing you noticed or learned
+            today?"
+
+
+            4. Once you have received responses for mood, action, and observation,
+            generate a brief diary entry of approximately 140 characters. Incorporate
+            the user''s responses into this entry.
+
+
+            5. If the user shared a positive thought or action (something that benefits
+            themselves or others), subtly praise this in the diary entry to encourage
+            such behavior. Be very gentle with this praise - it should be barely noticeable.
+
+
+            6. After generating the diary entry, ask the user if they''re satisfied
+            with it. For example: "Here''s a short diary entry based on what you shared.
+            Does this sound good to you?"
+
+
+            <diary_entry>
+
+            [Insert the generated diary entry here]
+
+            </diary_entry>
+
+
+            Special considerations:
+
+            - If the user mentions any harmful behaviors (actions that may hurt themselves
+            or others), do not encourage these. Instead, gently redirect to more positive
+            aspects of their day.
+
+            - Be careful not to overstimulate the user with your responses. Keep everything
+            calm and soothing to promote restfulness.
+
+            Only use <diary_entry> tags when presenting the final diary entry.
+            Begin by gently asking about the user''s current mood.'
+        - id: a301e9b5-b00a-47db-b124-b408e942a422
+          role: user
+          text: ''
+        selected: true
+        title: LLM
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 98
+      id: llm
+      position:
+        x: 380
+        y: 282
+      positionAbsolute:
+        x: 380
+        y: 282
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        answer: '{{#llm.text#}}'
+        desc: ''
+        selected: false
+        title: 回答
+        type: answer
+        variables: []
+      height: 103
+      id: answer
+      position:
+        x: 680
+        y: 282
+      positionAbsolute:
+        x: 680
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    viewport:
+      x: 106.53386825519945
+      y: 81.86103110900643
+      zoom: 0.7407740014059261
